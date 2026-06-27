@@ -1,0 +1,53 @@
+name: reaction_time_test
+description: "ReactionPro — 反应力与击杀时间测试网站（Flutter Web/移动/桌面）"
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 核心架构依赖（见 ADR-0008）
+  go_router: ^14.6.0          # 声明式路由
+  flutter_riverpod: ^2.6.1    # 状态管理
+  dio: ^5.7.0                 # HTTP 客户端
+  flutter_secure_storage: ^9.2.2 # Token 安全存储
+  window_manager: ^0.5.1        # Windows/macOS/Linux 窗口与全屏控制
+  fl_chart: ^0.69.2           # 趋势图图表
+  freezed_annotation: ^2.4.4  # 不可变数据模型注解
+  json_annotation: ^4.9.0     # JSON 序列化注解
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # 代码生成（freezed / json_serializable）
+  build_runner: ^2.4.0
+  freezed: ^2.4.4
+  json_serializable: ^6.9.0
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: CangErYuMoW01
+      fonts:
+        - asset: assets/fonts/cangeryumo-w01.ttf
+    - family: CangErYuMoW02
+      fonts:
+        - asset: assets/fonts/cangeryumo-w02.ttf
+    - family: CangErYuMoW03
+      fonts:
+        - asset: assets/fonts/cangeryumo-w03.ttf
+    - family: CangErYuMoW04
+      fonts:
+        - asset: assets/fonts/cangeryumo-w04.ttf
+    - family: CangErYuMoW05
+      fonts:
+        - asset: assets/fonts/cangeryumo-w05.ttf
