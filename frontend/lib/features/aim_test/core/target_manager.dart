@@ -287,6 +287,8 @@ final class AimRoundResult {
     required this.leaderboardEligible,
     required this.qualityScore,
     required this.qualityFlags,
+    this.frameSampleCount = 0,
+    this.droppedFrameCount = 0,
   });
 
   final String targetId;
@@ -297,6 +299,11 @@ final class AimRoundResult {
   final bool leaderboardEligible;
   final int qualityScore;
   final List<String> qualityFlags;
+  final int frameSampleCount;
+  final int droppedFrameCount;
+
+  double get droppedFrameRate =>
+      frameSampleCount == 0 ? 0 : droppedFrameCount / frameSampleCount;
 }
 
 final class AimTestState {
@@ -352,6 +359,9 @@ final class AimSummary {
     required this.leaderboardEligible,
     required this.qualityScore,
     required this.qualityFlags,
+    required this.frameSampleCount,
+    required this.droppedFrameCount,
+    required this.droppedFrameRate,
   });
 
   final int totalShots;
@@ -373,6 +383,9 @@ final class AimSummary {
   final bool leaderboardEligible;
   final int qualityScore;
   final List<String> qualityFlags;
+  final int frameSampleCount;
+  final int droppedFrameCount;
+  final double droppedFrameRate;
 }
 
 abstract interface class AimTargetSpawner {
@@ -627,6 +640,8 @@ final class AimTargetManager {
         leaderboardEligible: quality.leaderboardEligible,
         qualityScore: quality.qualityScore,
         qualityFlags: quality.flags,
+        frameSampleCount: quality.frameSampleCount ?? 0,
+        droppedFrameCount: quality.droppedFrameCount ?? 0,
       );
       _recordHit(target, round, nowMs);
       return AimShotResult(
@@ -668,6 +683,8 @@ final class AimTargetManager {
     var leaderboardEligible = killTimes.isNotEmpty;
     var qualityScore = 100;
     final qualityFlags = <String>{};
+    var frameSampleCount = 0;
+    var droppedFrameCount = 0;
     if (killTimes.isNotEmpty) {
       average = (killTimes.reduce((a, b) => a + b) / killTimes.length).round();
       best = killTimes.first;
@@ -682,6 +699,8 @@ final class AimTargetManager {
       leaderboardEligible = leaderboardEligible && result.leaderboardEligible;
       qualityScore = math.min(qualityScore, result.qualityScore);
       qualityFlags.addAll(result.qualityFlags);
+      frameSampleCount += result.frameSampleCount;
+      droppedFrameCount += result.droppedFrameCount;
     }
     if (config.evaluationMode == AimEvaluationMode.timed) {
       killsPerSecond = config.durationSeconds == 0
@@ -710,6 +729,11 @@ final class AimTargetManager {
       leaderboardEligible: leaderboardEligible,
       qualityScore: killTimes.isEmpty ? 0 : qualityScore,
       qualityFlags: List.unmodifiable(qualityFlags),
+      frameSampleCount: frameSampleCount,
+      droppedFrameCount: droppedFrameCount,
+      droppedFrameRate: frameSampleCount == 0
+          ? 0
+          : droppedFrameCount / frameSampleCount,
     );
   }
 

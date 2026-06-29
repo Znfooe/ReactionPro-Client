@@ -123,6 +123,10 @@ class ReactionResultDetails extends StatelessWidget {
               value: entry.leaderboardEligible ? '可入榜' : '仅练习',
             ),
             _SummaryMetric(label: '质量分', value: '${entry.qualityScore}'),
+            _SummaryMetric(
+              label: '掉帧率',
+              value: _formatPercent(entry.droppedFrameRate),
+            ),
           ],
         ),
         const SizedBox(height: AppSpacing.x4),
@@ -155,6 +159,11 @@ class ReactionResultDetails extends StatelessWidget {
               _DataChip(
                 label: '延迟补偿值',
                 value: _formatDecimalMs(entry.calibrationOffsetMs),
+              ),
+              _DataChip(
+                label: '掉帧',
+                value:
+                    '${entry.totalDroppedFrameCount} / ${entry.totalFrameSampleCount}',
               ),
             ],
           ),
@@ -434,6 +443,7 @@ class _ReactionRoundDataTable extends StatelessWidget {
           DataColumn(label: Text('校准反应')),
           DataColumn(label: Text('资格')),
           DataColumn(label: Text('质量分')),
+          DataColumn(label: Text('掉帧率')),
           DataColumn(label: Text('质量标记')),
         ],
         rows: [
@@ -448,6 +458,7 @@ class _ReactionRoundDataTable extends StatelessWidget {
                 DataCell(Text(_formatMs(round.calibratedReactionTimeMs))),
                 DataCell(Text(round.leaderboardEligible ? '可入榜' : '练习')),
                 DataCell(Text('${round.qualityScore}')),
+                DataCell(Text(_formatPercent(round.droppedFrameRate))),
                 DataCell(
                   Text(
                     round.qualityFlags.isEmpty
@@ -466,6 +477,8 @@ class _ReactionRoundDataTable extends StatelessWidget {
 String _formatMs(int value) => '$value ms';
 
 String _formatDecimalMs(double value) => '${value.toStringAsFixed(1)} ms';
+
+String _formatPercent(double value) => '${(value * 100).toStringAsFixed(1)}%';
 
 String _formatHistoryTime(DateTime value) {
   String twoDigits(int number) => number.toString().padLeft(2, '0');

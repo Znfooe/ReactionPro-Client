@@ -908,6 +908,9 @@ class _AimTestPageState extends ConsumerState<AimTestPage>
               'gridLineCount': _gridLineCount,
               'activeTargetCount': _manager.config.activeTargetCount,
               'movementSpeedMetersPerSecond': _movementSpeedMetersPerSecond,
+              'frameSampleCount': summary.frameSampleCount,
+              'droppedFrameCount': summary.droppedFrameCount,
+              'droppedFrameRate': summary.droppedFrameRate,
               'mYaw': _mYaw,
               'mPitch': _mPitch,
               'crosshair': {
@@ -933,6 +936,9 @@ class _AimTestPageState extends ConsumerState<AimTestPage>
                   'leaderboardEligible': result.leaderboardEligible,
                   'qualityScore': result.qualityScore,
                   'qualityFlags': result.qualityFlags,
+                  'frameSampleCount': result.frameSampleCount,
+                  'droppedFrameCount': result.droppedFrameCount,
+                  'droppedFrameRate': result.droppedFrameRate,
                 },
             ],
           );
@@ -2662,6 +2668,10 @@ class _AimResultDetails extends StatelessWidget {
               value: summary.leaderboardEligible ? '可入榜' : '仅练习',
             ),
             _SummaryMetric(label: '质量分', value: '${summary.qualityScore}'),
+            _SummaryMetric(
+              label: '掉帧率',
+              value: _formatPercent(summary.droppedFrameRate),
+            ),
           ],
         ),
         if (summary.qualityFlags.isNotEmpty) ...[
@@ -2828,6 +2838,7 @@ class _RoundDataTable extends StatelessWidget {
           DataColumn(label: Text('输入延迟')),
           DataColumn(label: Text('资格')),
           DataColumn(label: Text('质量分')),
+          DataColumn(label: Text('掉帧率')),
           DataColumn(label: Text('标记')),
         ],
         rows: [
@@ -2842,6 +2853,7 @@ class _RoundDataTable extends StatelessWidget {
                 DataCell(Text(_formatMs(rounds[i].estimatedInputDelayMs))),
                 DataCell(Text(rounds[i].leaderboardEligible ? '可入榜' : '练习')),
                 DataCell(Text('${rounds[i].qualityScore}')),
+                DataCell(Text(_formatPercent(rounds[i].droppedFrameRate))),
                 DataCell(Text(rounds[i].qualityFlags.join(', '))),
               ],
             ),

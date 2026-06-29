@@ -17,6 +17,8 @@ void main() {
         leaderboardEligible: true,
         qualityScore: 96,
         qualityFlags: [],
+        frameSampleCount: 100,
+        droppedFrameCount: 2,
       ),
       ReactionRoundResult(
         roundNumber: 2,
@@ -27,6 +29,8 @@ void main() {
         leaderboardEligible: false,
         qualityScore: 82,
         qualityFlags: ['frame_jitter'],
+        frameSampleCount: 100,
+        droppedFrameCount: 4,
       ),
     ];
     const state = ReactionTestState(
@@ -70,6 +74,8 @@ void main() {
     expect(find.text('硬件延迟估算'), findsOneWidget);
     expect(find.text('校准反应'), findsOneWidget);
     expect(find.text('质量分'), findsWidgets);
+    expect(find.text('掉帧率'), findsWidgets);
+    expect(find.text('3.0%'), findsOneWidget);
     expect(find.text('质量标记'), findsWidgets);
     expect(find.text('frame_jitter'), findsWidgets);
   });

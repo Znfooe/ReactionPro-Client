@@ -453,6 +453,9 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
               'calibrationOffsetMs': entry.calibrationOffsetMs,
               'averageHardwareLatencyEstimateMs':
                   entry.averageHardwareLatencyEstimateMs,
+              'frameSampleCount': entry.totalFrameSampleCount,
+              'droppedFrameCount': entry.totalDroppedFrameCount,
+              'droppedFrameRate': entry.droppedFrameRate,
               'qualityFlags': qualityFlags,
             },
             perRoundData: [
@@ -467,6 +470,9 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
                   'leaderboardEligible': result.leaderboardEligible,
                   'qualityScore': result.qualityScore,
                   'qualityFlags': result.qualityFlags,
+                  'frameSampleCount': result.frameSampleCount,
+                  'droppedFrameCount': result.droppedFrameCount,
+                  'droppedFrameRate': result.droppedFrameRate,
                 },
             ],
           );
@@ -778,6 +784,10 @@ class _RoundPanel extends StatelessWidget {
                   : '${state.currentResult!.qualityScore}',
             ),
             _MetricRow(
+              label: '掉帧率',
+              value: _formatDroppedFrameRate(state.currentResult),
+            ),
+            _MetricRow(
               label: '质量标记',
               value: _formatQualityFlags(state.currentResult),
             ),
@@ -849,6 +859,13 @@ class _RoundPanel extends StatelessWidget {
       return '无';
     }
     return result.qualityFlags.join(', ');
+  }
+
+  String _formatDroppedFrameRate(ReactionRoundResult? result) {
+    if (result == null) {
+      return '--';
+    }
+    return '${(result.droppedFrameRate * 100).toStringAsFixed(1)}%';
   }
 }
 

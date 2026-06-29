@@ -72,6 +72,58 @@ void main() {
       expect(evidence.leaderboardEligible, isTrue);
       expect(evidence.qualityScore, 100);
       expect(evidence.flags, isEmpty);
+      expect(evidence.droppedFrameRate, 0);
+    });
+
+    test('tolerates occasional dropped frames below five percent', () {
+      const policy = PrecisionQualityPolicy(minimumFrameSamples: 2);
+      final evidence = policy.evaluate(
+        renderTiming: const RenderPresentationTiming(
+          requestedAtMs: 100,
+          presentedAtMs: 108,
+        ),
+        inputTiming: const InputEventTiming(
+          eventTimestampMs: 350,
+          handledAtMs: 354,
+        ),
+        frameQuality: const FrameQualitySnapshot(
+          sampleCount: 100,
+          averageFrameIntervalMs: 16.8,
+          maxFrameIntervalMs: 50,
+          droppedFrameCount: 4,
+          estimatedRefreshRateHz: 59.5,
+        ),
+      );
+
+      expect(evidence.leaderboardEligible, isTrue);
+      expect(evidence.qualityScore, 100);
+      expect(evidence.flags, isEmpty);
+      expect(evidence.droppedFrameRate, closeTo(0.04, 0.0001));
+    });
+
+    test('rejects sustained frame drops and severe frame stalls', () {
+      const policy = PrecisionQualityPolicy(minimumFrameSamples: 2);
+      final evidence = policy.evaluate(
+        renderTiming: const RenderPresentationTiming(
+          requestedAtMs: 100,
+          presentedAtMs: 108,
+        ),
+        inputTiming: const InputEventTiming(
+          eventTimestampMs: 350,
+          handledAtMs: 354,
+        ),
+        frameQuality: const FrameQualitySnapshot(
+          sampleCount: 100,
+          averageFrameIntervalMs: 19,
+          maxFrameIntervalMs: 120,
+          droppedFrameCount: 6,
+          estimatedRefreshRateHz: 52.6,
+        ),
+      );
+
+      expect(evidence.leaderboardEligible, isFalse);
+      expect(evidence.flags, contains('frame_interval_high'));
+      expect(evidence.flags, contains('dropped_frames'));
     });
 
     test('rejects scores with missing render evidence and dropped frames', () {
@@ -93,7 +145,6 @@ void main() {
       expect(evidence.leaderboardEligible, isFalse);
       expect(evidence.flags, contains('render_timestamp_missing'));
       expect(evidence.flags, contains('input_handler_delay_high'));
-      expect(evidence.flags, contains('frame_interval_high'));
       expect(evidence.flags, contains('dropped_frames'));
     });
   });

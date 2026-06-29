@@ -64,6 +64,9 @@ final class FrameQualitySnapshot {
   final double maxFrameIntervalMs;
   final int droppedFrameCount;
   final double estimatedRefreshRateHz;
+
+  double get droppedFrameRate =>
+      sampleCount == 0 ? 0 : droppedFrameCount / sampleCount;
 }
 
 final class FrameQualityMonitor {
@@ -118,7 +121,9 @@ final class ScorePrecisionEvidence {
     this.inputHandlerDelayMs,
     this.averageFrameIntervalMs,
     this.maxFrameIntervalMs,
+    this.frameSampleCount,
     this.droppedFrameCount,
+    this.droppedFrameRate,
     this.estimatedRefreshRateHz,
   });
 
@@ -129,7 +134,9 @@ final class ScorePrecisionEvidence {
   final double? inputHandlerDelayMs;
   final double? averageFrameIntervalMs;
   final double? maxFrameIntervalMs;
+  final int? frameSampleCount;
   final int? droppedFrameCount;
+  final double? droppedFrameRate;
   final double? estimatedRefreshRateHz;
 
   Map<String, Object?> toJson() {
@@ -141,7 +148,9 @@ final class ScorePrecisionEvidence {
       'inputHandlerDelayMs': inputHandlerDelayMs,
       'averageFrameIntervalMs': averageFrameIntervalMs,
       'maxFrameIntervalMs': maxFrameIntervalMs,
+      'frameSampleCount': frameSampleCount,
       'droppedFrameCount': droppedFrameCount,
+      'droppedFrameRate': droppedFrameRate,
       'estimatedRefreshRateHz': estimatedRefreshRateHz,
     };
   }
@@ -151,15 +160,15 @@ final class PrecisionQualityPolicy {
   const PrecisionQualityPolicy({
     this.maxRenderDelayMs = 25,
     this.maxInputHandlerDelayMs = 16,
-    this.maxFrameIntervalMs = 34,
-    this.maxDroppedFrameCount = 0,
+    this.maxFrameIntervalMs = 100,
+    this.maxDroppedFrameRate = 0.05,
     this.minimumFrameSamples = 30,
   });
 
   final double maxRenderDelayMs;
   final double maxInputHandlerDelayMs;
   final double maxFrameIntervalMs;
-  final int maxDroppedFrameCount;
+  final double maxDroppedFrameRate;
   final int minimumFrameSamples;
 
   ScorePrecisionEvidence evaluate({
@@ -193,7 +202,7 @@ final class PrecisionQualityPolicy {
     if (frameQuality.maxFrameIntervalMs > maxFrameIntervalMs) {
       flags.add('frame_interval_high');
     }
-    if (frameQuality.droppedFrameCount > maxDroppedFrameCount) {
+    if (frameQuality.droppedFrameRate > maxDroppedFrameRate) {
       flags.add('dropped_frames');
     }
     if (requiresPointerLock && !pointerLocked) {
@@ -213,9 +222,15 @@ final class PrecisionQualityPolicy {
       maxFrameIntervalMs: frameQuality.sampleCount == 0
           ? null
           : frameQuality.maxFrameIntervalMs,
+      frameSampleCount: frameQuality.sampleCount == 0
+          ? null
+          : frameQuality.sampleCount,
       droppedFrameCount: frameQuality.sampleCount == 0
           ? null
           : frameQuality.droppedFrameCount,
+      droppedFrameRate: frameQuality.sampleCount == 0
+          ? null
+          : frameQuality.droppedFrameRate,
       estimatedRefreshRateHz: frameQuality.sampleCount == 0
           ? null
           : frameQuality.estimatedRefreshRateHz,

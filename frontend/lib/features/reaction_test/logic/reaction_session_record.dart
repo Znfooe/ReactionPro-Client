@@ -56,6 +56,17 @@ final class ReactionSessionRecord {
   double get averageHardwareLatencyEstimateMs =>
       _average(rounds.map((round) => round.hardwareLatencyEstimateMs));
 
+  int get totalFrameSampleCount =>
+      rounds.fold(0, (total, round) => total + round.frameSampleCount);
+
+  int get totalDroppedFrameCount =>
+      rounds.fold(0, (total, round) => total + round.droppedFrameCount);
+
+  double get droppedFrameRate {
+    final sampleCount = totalFrameSampleCount;
+    return sampleCount == 0 ? 0 : totalDroppedFrameCount / sampleCount;
+  }
+
   bool get leaderboardEligible =>
       rounds.every((round) => round.leaderboardEligible);
 

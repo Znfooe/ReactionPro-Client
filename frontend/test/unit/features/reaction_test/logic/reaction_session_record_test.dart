@@ -15,6 +15,8 @@ void main() {
           leaderboardEligible: true,
           qualityScore: 96,
           qualityFlags: [],
+          frameSampleCount: 100,
+          droppedFrameCount: 2,
         ),
         ReactionRoundResult(
           roundNumber: 2,
@@ -25,6 +27,8 @@ void main() {
           leaderboardEligible: false,
           qualityScore: 82,
           qualityFlags: ['frame_jitter'],
+          frameSampleCount: 100,
+          droppedFrameCount: 4,
         ),
       ];
       const state = ReactionTestState(
@@ -55,6 +59,9 @@ void main() {
       expect(record.averageEstimatedRenderDelayMs, 18);
       expect(record.averageEstimatedInputDelayMs, 9);
       expect(record.averageHardwareLatencyEstimateMs, 27);
+      expect(record.totalFrameSampleCount, 200);
+      expect(record.totalDroppedFrameCount, 6);
+      expect(record.droppedFrameRate, closeTo(0.03, 0.0001));
       expect(record.leaderboardEligible, isFalse);
       expect(record.qualityScore, 82);
       expect(record.qualityFlags, ['frame_jitter']);

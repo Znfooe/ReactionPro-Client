@@ -89,6 +89,8 @@ final class ReactionRoundResult {
     required this.leaderboardEligible,
     required this.qualityScore,
     required this.qualityFlags,
+    this.frameSampleCount = 0,
+    this.droppedFrameCount = 0,
   });
 
   final int roundNumber;
@@ -99,9 +101,14 @@ final class ReactionRoundResult {
   final bool leaderboardEligible;
   final int qualityScore;
   final List<String> qualityFlags;
+  final int frameSampleCount;
+  final int droppedFrameCount;
 
   int get hardwareLatencyEstimateMs =>
       estimatedRenderDelayMs + estimatedInputDelayMs;
+
+  double get droppedFrameRate =>
+      frameSampleCount == 0 ? 0 : droppedFrameCount / frameSampleCount;
 }
 
 final class ReactionSessionSummary {
@@ -452,6 +459,8 @@ final class ReactionTestController extends StateNotifier<ReactionTestState> {
       leaderboardEligible: evidence.leaderboardEligible,
       qualityScore: evidence.qualityScore,
       qualityFlags: evidence.flags,
+      frameSampleCount: evidence.frameSampleCount ?? 0,
+      droppedFrameCount: evidence.droppedFrameCount ?? 0,
     );
     state = state.copyWith(
       phase: ReactionTestPhase.result,
