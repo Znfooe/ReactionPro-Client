@@ -7,6 +7,110 @@ final scoreServiceProvider = Provider<ScoreService>((ref) {
   return ScoreService(ref.watch(dioProvider));
 });
 
+final myScoreHistoryProvider = FutureProvider.autoDispose<MyScoreHistory>((
+  ref,
+) {
+  return ref.watch(scoreServiceProvider).fetchMyScores();
+});
+
+final class MyScoreSummary {
+  const MyScoreSummary({
+    required this.totalTests,
+    required this.reactionTests,
+    required this.averageReactionTime,
+    required this.bestReactionTime,
+    required this.aimTests,
+    required this.averageKillTime,
+    required this.bestKillTime,
+  });
+
+  final int totalTests;
+  final int reactionTests;
+  final int? averageReactionTime;
+  final int? bestReactionTime;
+  final int aimTests;
+  final int? averageKillTime;
+  final int? bestKillTime;
+
+  factory MyScoreSummary.fromJson(Map<String, Object?> json) {
+    return MyScoreSummary(
+      totalTests: json['totalTests'] as int,
+      reactionTests: json['reactionTests'] as int,
+      averageReactionTime: json['averageReactionTime'] as int?,
+      bestReactionTime: json['bestReactionTime'] as int?,
+      aimTests: json['aimTests'] as int,
+      averageKillTime: json['averageKillTime'] as int?,
+      bestKillTime: json['bestKillTime'] as int?,
+    );
+  }
+}
+
+final class MyScoreItem {
+  const MyScoreItem({
+    required this.id,
+    required this.testType,
+    required this.roundCount,
+    required this.calibratedTime,
+    required this.rawTime,
+    required this.avgKillTime,
+    required this.bestTime,
+    required this.isValid,
+    required this.leaderboardEligible,
+    required this.qualityScore,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String testType;
+  final int? roundCount;
+  final int? calibratedTime;
+  final int? rawTime;
+  final int? avgKillTime;
+  final int? bestTime;
+  final bool isValid;
+  final bool leaderboardEligible;
+  final int qualityScore;
+  final DateTime createdAt;
+
+  factory MyScoreItem.fromJson(Map<String, Object?> json) {
+    return MyScoreItem(
+      id: json['id'] as String,
+      testType: json['testType'] as String,
+      roundCount: json['roundCount'] as int?,
+      calibratedTime: json['calibratedTime'] as int?,
+      rawTime: json['rawTime'] as int?,
+      avgKillTime: json['avgKillTime'] as int?,
+      bestTime: json['bestTime'] as int?,
+      isValid: json['isValid'] as bool,
+      leaderboardEligible: json['leaderboardEligible'] as bool,
+      qualityScore: json['qualityScore'] as int,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+  }
+}
+
+final class MyScoreHistory {
+  const MyScoreHistory({required this.summary, required this.items});
+
+  final MyScoreSummary summary;
+  final List<MyScoreItem> items;
+
+  factory MyScoreHistory.fromJson(Map<String, Object?> json) {
+    final summary = json['summary'];
+    final items = json['items'];
+    if (summary is! Map<String, Object?> || items is! List<Object?>) {
+      throw const FormatException('Invalid score history response data.');
+    }
+    return MyScoreHistory(
+      summary: MyScoreSummary.fromJson(summary),
+      items: [
+        for (final item in items)
+          if (item is Map<String, Object?>) MyScoreItem.fromJson(item),
+      ],
+    );
+  }
+}
+
 final class SubmittedScore {
   const SubmittedScore({
     required this.id,
@@ -49,6 +153,14 @@ final class ScoreService {
   const ScoreService(this._dio);
 
   final Dio _dio;
+
+  Future<MyScoreHistory> fetchMyScores({int limit = 50}) async {
+    final response = await _dio.get<Map<String, Object?>>(
+      '/scores/me',
+      queryParameters: {'limit': limit},
+    );
+    return MyScoreHistory.fromJson(_unwrapData(response.data));
+  }
 
   Future<SubmittedScore> submitReactionScore({
     required int roundCount,

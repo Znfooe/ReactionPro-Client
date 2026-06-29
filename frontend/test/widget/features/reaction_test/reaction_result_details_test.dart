@@ -73,4 +73,57 @@ void main() {
     expect(find.text('质量标记'), findsWidgets);
     expect(find.text('frame_jitter'), findsWidgets);
   });
+
+  testWidgets('历史记录未展开时应直接显示弹窗查看按钮', (tester) async {
+    const round = ReactionRoundResult(
+      roundNumber: 1,
+      rawReactionTimeMs: 240,
+      estimatedRenderDelayMs: 16,
+      estimatedInputDelayMs: 8,
+      calibratedReactionTimeMs: 216,
+      leaderboardEligible: true,
+      qualityScore: 96,
+      qualityFlags: [],
+    );
+    const state = ReactionTestState(
+      phase: ReactionTestPhase.completed,
+      selectedRoundCount: 1,
+      results: [round],
+      summary: ReactionSessionSummary(
+        averageReactionTimeMs: 216,
+        bestReactionTimeMs: 216,
+        worstReactionTimeMs: 216,
+        standardDeviationMs: 0,
+      ),
+      calibrationOffsetMs: 8,
+      signalMinDelaySeconds: 2,
+      signalMaxDelaySeconds: 7,
+    );
+    final entry = ReactionSessionRecord.fromCompletedState(
+      state,
+      completedAt: DateTime.utc(2026, 6, 29, 0, 31),
+    );
+    ReactionSessionRecord? openedEntry;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: ReactionHistoryPanel(
+            entries: [entry],
+            onOpenDetails: (value) => openedEntry = value,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('弹窗查看'), findsOneWidget);
+    expect(find.text('延迟分解汇总'), findsNothing);
+
+    await tester.tap(find.text('弹窗查看'));
+    await tester.pump();
+
+    expect(openedEntry, same(entry));
+    expect(find.text('延迟分解汇总'), findsNothing);
+  });
 }

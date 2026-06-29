@@ -1,0 +1,81 @@
+name: Release macOS DMG
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing or new release tag
+        required: true
+        default: v1.0.0
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-macos-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.3
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS release
+        run: >-
+          flutter build macos --release
+          --dart-define=API_BASE_URL=https://fps.znfooe.top/api/v1
+
+      - name: Package DMG
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          app_path="build/macos/Build/Products/Release/ReactionPro.app"
+          test -d "$app_path"
+          codesign --force --deep --sign - "$app_path"
+          rm -rf build/dmg-root
+          mkdir -p build/dmg-root
+          ditto "$app_path" build/dmg-root/ReactionPro.app
+          ln -s /Applications build/dmg-root/Applications
+          hdiutil create \
+            -volname "ReactionPro ${TAG#v}" \
+            -srcfolder build/dmg-root \
+            -ov \
+            -format UDZO \
+            build/ReactionPro-macOS.dmg
+          shasum -a 256 build/ReactionPro-macOS.dmg \
+            > build/ReactionPro-macOS.dmg.sha256
+
+      - name: Publish DMG to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "ReactionPro ${TAG#v}" \
+              --notes "ReactionPro desktop release. The macOS build is not Apple-notarized yet."
+          fi
+          gh release upload "$TAG" \
+            build/ReactionPro-macOS.dmg \
+            build/ReactionPro-macOS.dmg.sha256 \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber

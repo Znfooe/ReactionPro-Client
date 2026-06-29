@@ -1,5 +1,6 @@
 abstract final class AppRoutes {
   static const home = '/';
+  static const about = '/about';
   static const reactionTest = '/reaction-test';
   static const aimTest = '/aim-test';
   static const leaderboard = '/leaderboard';

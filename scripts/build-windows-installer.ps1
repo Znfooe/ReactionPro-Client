@@ -20,11 +20,17 @@ $ReleaseDir = Join-Path $FrontendRoot "build\windows\x64\runner\Release"
 $AppExe = Join-Path $ReleaseDir "ReactionPro.exe"
 $InstallerDir = Join-Path $FrontendRoot "windows\installer"
 $InstallerScript = Join-Path $InstallerDir "ReactionPro.iss"
+$Pubspec = Join-Path $FrontendRoot "pubspec.yaml"
 $PrerequisiteDir = Join-Path $InstallerDir "prerequisites"
 $VcRedist = Join-Path $PrerequisiteDir "VC_redist.x64.exe"
 $VcRedistUrl = "https://download.visualstudio.microsoft.com/download/pr/ebdab8e5-1d7b-4d9f-a11b-cbb1720c3b12/843068991DAAA1F73AD9F6239BCE4D0F6A07A51F18C37EA2A867E9BECA71295C/VC_redist.x64.exe"
 $VcRedistSha256 = "843068991DAAA1F73AD9F6239BCE4D0F6A07A51F18C37EA2A867E9BECA71295C"
-$OutputFile = Join-Path $RepoRoot "dist\ReactionPro-Setup-x64-1.0.0.exe"
+$VersionLine = Get-Content -LiteralPath $Pubspec | Where-Object { $_ -match '^version:\s*' } | Select-Object -First 1
+if (-not $VersionLine -or $VersionLine -notmatch '^version:\s*(\d+\.\d+\.\d+)(?:\+(\d+))?\s*$') {
+    throw "Unable to read a semantic version from frontend/pubspec.yaml."
+}
+$AppVersion = $Matches[1]
+$OutputFile = Join-Path $RepoRoot "dist\ReactionPro-Setup-x64-$AppVersion.exe"
 
 function Invoke-Flutter {
     param(
@@ -116,7 +122,7 @@ if (-not $Iscc) {
 }
 
 Write-Host "Compiling the ReactionPro installer..."
-& $Iscc $InstallerScript
+& $Iscc "/DMyAppVersion=$AppVersion" $InstallerScript
 if ($LASTEXITCODE -ne 0) {
     throw "Inno Setup failed with exit code $LASTEXITCODE."
 }

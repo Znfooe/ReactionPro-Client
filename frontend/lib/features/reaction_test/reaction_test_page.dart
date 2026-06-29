@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +19,7 @@ import '../score/services/score_service.dart';
 import '../score/widgets/score_submit_panel.dart';
 import 'core/timing_engine.dart';
 import 'logic/reaction_session_record.dart';
+import 'logic/reaction_session_history.dart';
 import 'logic/reaction_test_controller.dart';
 import 'widgets/reaction_result_details.dart';
 
@@ -37,7 +40,6 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
   bool _immersive = false;
   SubmittedScore? _submittedScore;
   String? _submitError;
-  final List<ReactionSessionRecord> _historyEntries = [];
   bool _resultDialogOpen = false;
 
   @override
@@ -90,6 +92,7 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
     final state = ref.watch(reactionTestControllerProvider);
     final controller = ref.read(reactionTestControllerProvider.notifier);
     final authState = ref.watch(authProvider);
+    final historyEntries = ref.watch(reactionSessionHistoryProvider);
 
     if (_immersive) {
       return Scaffold(
@@ -232,7 +235,7 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
           ),
           const SizedBox(height: AppSpacing.x8),
           ReactionHistoryPanel(
-            entries: _historyEntries,
+            entries: historyEntries,
             onOpenDetails: _showReactionResultDialog,
           ),
         ],
@@ -274,6 +277,9 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
         });
       }
       _fullscreenController.exitFullscreen();
+      if (ref.read(authProvider).isAuthenticated) {
+        unawaited(_submitReactionScore(entry));
+      }
       _showReactionResultDialog(entry, allowScoreSubmit: true);
     }
   }
@@ -303,10 +309,7 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
   }
 
   void _storeHistoryEntry(ReactionSessionRecord entry) {
-    _historyEntries.insert(0, entry);
-    if (_historyEntries.length > 50) {
-      _historyEntries.removeRange(50, _historyEntries.length);
-    }
+    ref.read(reactionSessionHistoryProvider.notifier).add(entry);
   }
 
   void _showReactionResultDialog(
@@ -389,8 +392,9 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
     if (state.phase != ReactionTestPhase.completed || state.results.isEmpty) {
       return;
     }
-    final entry = _historyEntries.isNotEmpty
-        ? _historyEntries.first
+    final historyEntries = ref.read(reactionSessionHistoryProvider);
+    final entry = historyEntries.isNotEmpty
+        ? historyEntries.first
         : ReactionSessionRecord.fromCompletedState(
             state,
             completedAt: DateTime.now(),
@@ -469,6 +473,7 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
       setState(() {
         _submittedScore = submitted;
       });
+      ref.invalidate(myScoreHistoryProvider);
     } catch (_) {
       if (!mounted) {
         return;

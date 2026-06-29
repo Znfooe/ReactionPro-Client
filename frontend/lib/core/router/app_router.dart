@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/aim_test/aim_test_page.dart';
+import '../../features/about/about_page.dart';
 import '../../features/auth/models/auth_state.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/login_page.dart';
@@ -48,6 +49,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.home,
         pageBuilder: (context, state) => _page(state, const HomePage()),
+      ),
+      GoRoute(
+        path: AppRoutes.about,
+        pageBuilder: (context, state) => _page(state, const AboutPage()),
       ),
       GoRoute(
         path: AppRoutes.reactionTest,

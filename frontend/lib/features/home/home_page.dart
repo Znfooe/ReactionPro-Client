@@ -16,31 +16,40 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppPageScaffold(
       activeRoute: AppRoutes.home,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 900;
+      child: const _HeroSection(),
+    );
+  }
+}
 
-          if (wide) {
-            return const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: 3, child: _HomeIntro()),
-                SizedBox(width: AppSpacing.x8),
-                Expanded(flex: 2, child: ArenaPreview()),
-              ],
-            );
-          }
+class _HeroSection extends StatelessWidget {
+  const _HeroSection();
 
-          return const Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 900;
+
+        if (wide) {
+          return const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _HomeIntro(),
-              SizedBox(height: AppSpacing.x8),
-              ArenaPreview(),
+              Expanded(flex: 3, child: _HomeIntro()),
+              SizedBox(width: AppSpacing.x8),
+              Expanded(flex: 2, child: ArenaPreview()),
             ],
           );
-        },
-      ),
+        }
+
+        return const Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _HomeIntro(),
+            SizedBox(height: AppSpacing.x8),
+            ArenaPreview(),
+          ],
+        );
+      },
     );
   }
 }
@@ -52,6 +61,7 @@ class _HomeIntro extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final extension = AppThemeExtension.of(context);
+    final wideCards = MediaQuery.sizeOf(context).width >= 700;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,6 +83,16 @@ class _HomeIntro extends StatelessWidget {
             context,
           ).textTheme.titleLarge?.copyWith(color: extension.textSecondary),
         ),
+        const SizedBox(height: AppSpacing.x4),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Text(
+            '从校准反应时间到准星灵敏度模拟，把测试做准，把体验做顺，把页面做得更有记忆点。',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: extension.textSecondary),
+          ),
+        ),
         const SizedBox(height: AppSpacing.x8),
         Wrap(
           spacing: AppSpacing.x4,
@@ -81,25 +101,23 @@ class _HomeIntro extends StatelessWidget {
             FilledButton.icon(
               onPressed: () => context.go(AppRoutes.reactionTest),
               icon: const Icon(Icons.speed_outlined),
-              label: const Text('反应力测试'),
+              label: const Text('开始反应力测试'),
             ),
             OutlinedButton.icon(
               onPressed: () => context.go(AppRoutes.aimTest),
               icon: const Icon(Icons.my_location_outlined),
-              label: const Text('击杀时间测试'),
+              label: const Text('开始击杀时间测试'),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.x10),
         GridView.count(
-          crossAxisCount: MediaQuery.sizeOf(context).width >= 700 ? 2 : 1,
+          crossAxisCount: wideCards ? 2 : 1,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: AppSpacing.x4,
           mainAxisSpacing: AppSpacing.x4,
-          childAspectRatio: MediaQuery.sizeOf(context).width >= 700
-              ? 1.55
-              : 1.85,
+          childAspectRatio: wideCards ? 1.55 : 1.85,
           children: const [
             FeatureCard(
               route: AppRoutes.reactionTest,

@@ -9,6 +9,7 @@ import '../../core/theme/app_typography.dart';
 import '../../features/auth/models/auth_state.dart';
 import '../../features/auth/models/user_model.dart';
 import '../../features/auth/providers/auth_provider.dart';
+import '../../features/score/services/score_service.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
 import '../../shared/widgets/status_pill.dart';
 
@@ -40,6 +41,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final colors = Theme.of(context).colorScheme;
     final extension = AppThemeExtension.of(context);
     final user = authState.user;
+    final scoreHistory = user == null
+        ? null
+        : ref.watch(myScoreHistoryProvider);
 
     if (user != null && user.id != _syncedUserId) {
       _syncedUserId = user.id;
@@ -76,6 +80,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               avatarUrlController: _avatarUrlController,
               saving: _saving,
               deleting: _deleting,
+              scoreHistory: scoreHistory!,
+              onRetryScores: () => ref.invalidate(myScoreHistoryProvider),
               onSave: _saveProfile,
               onLogout: () => ref.read(authProvider.notifier).logout(),
               onDelete: _confirmDeleteAccount,
@@ -217,6 +223,8 @@ class _AuthenticatedProfile extends StatelessWidget {
     required this.avatarUrlController,
     required this.saving,
     required this.deleting,
+    required this.scoreHistory,
+    required this.onRetryScores,
     required this.onSave,
     required this.onLogout,
     required this.onDelete,
@@ -229,6 +237,8 @@ class _AuthenticatedProfile extends StatelessWidget {
   final TextEditingController avatarUrlController;
   final bool saving;
   final bool deleting;
+  final AsyncValue<MyScoreHistory> scoreHistory;
+  final VoidCallback onRetryScores;
   final VoidCallback onSave;
   final VoidCallback onLogout;
   final VoidCallback onDelete;
@@ -346,15 +356,7 @@ class _AuthenticatedProfile extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.x8),
-            Wrap(
-              spacing: AppSpacing.x4,
-              runSpacing: AppSpacing.x4,
-              children: const [
-                _ProfileMetric(label: '总测试次数', value: '0'),
-                _ProfileMetric(label: '平均反应时间', value: '-- ms'),
-                _ProfileMetric(label: '最佳成绩', value: '-- ms'),
-              ],
-            ),
+            _ProfileScoreHistory(history: scoreHistory, onRetry: onRetryScores),
           ],
         ),
       ),
@@ -381,6 +383,145 @@ class _AuthenticatedProfile extends StatelessWidget {
       return '请输入有效的头像 URL';
     }
     return null;
+  }
+}
+
+class _ProfileScoreHistory extends StatelessWidget {
+  const _ProfileScoreHistory({required this.history, required this.onRetry});
+
+  final AsyncValue<MyScoreHistory> history;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return history.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.errorContainer,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.x4),
+          child: Row(
+            children: [
+              const Expanded(child: Text('成绩同步失败，请检查网络后重试。')),
+              const SizedBox(width: AppSpacing.x3),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_outlined),
+                label: const Text('重试'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      data: (scoreHistory) =>
+          _ProfileScoreHistoryContent(scoreHistory: scoreHistory),
+    );
+  }
+}
+
+class _ProfileScoreHistoryContent extends StatelessWidget {
+  const _ProfileScoreHistoryContent({required this.scoreHistory});
+
+  final MyScoreHistory scoreHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = scoreHistory.summary;
+    final recentItems = scoreHistory.items.take(5).toList(growable: false);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('成绩摘要', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: AppSpacing.x4),
+        Wrap(
+          spacing: AppSpacing.x4,
+          runSpacing: AppSpacing.x4,
+          children: [
+            _ProfileMetric(label: '总测试次数', value: '${summary.totalTests}'),
+            _ProfileMetric(
+              label: '平均反应时间',
+              value: _milliseconds(summary.averageReactionTime),
+            ),
+            _ProfileMetric(
+              label: '最佳反应成绩',
+              value: _milliseconds(summary.bestReactionTime),
+            ),
+            if (summary.aimTests > 0) ...[
+              _ProfileMetric(
+                label: '平均击杀时间',
+                value: _milliseconds(summary.averageKillTime),
+              ),
+              _ProfileMetric(
+                label: '最佳击杀成绩',
+                value: _milliseconds(summary.bestKillTime),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: AppSpacing.x8),
+        Text('最近成绩', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: AppSpacing.x3),
+        if (recentItems.isEmpty)
+          Text(
+            '完成一次测试后，成绩会自动同步到这里。',
+            style: Theme.of(context).textTheme.bodyMedium,
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: recentItems.length,
+            separatorBuilder: (context, index) => const Divider(),
+            itemBuilder: (context, index) =>
+                _ProfileScoreRow(score: recentItems[index]),
+          ),
+      ],
+    );
+  }
+
+  static String _milliseconds(int? value) =>
+      value == null ? '-- ms' : '$value ms';
+}
+
+class _ProfileScoreRow extends StatelessWidget {
+  const _ProfileScoreRow({required this.score});
+
+  final MyScoreItem score;
+
+  @override
+  Widget build(BuildContext context) {
+    final reaction = score.testType == 'reaction';
+    final primaryValue = reaction ? score.calibratedTime : score.avgKillTime;
+    final status = !score.isValid
+        ? '无效成绩'
+        : score.leaderboardEligible
+        ? '已入榜'
+        : '练习成绩';
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        reaction ? Icons.bolt_outlined : Icons.center_focus_strong_outlined,
+      ),
+      title: Text(
+        '${reaction ? '反应力测试' : '击杀时间测试'} · ${primaryValue ?? '--'} ms',
+      ),
+      subtitle: Text(
+        '${_formatDate(score.createdAt)} · 质量分 ${score.qualityScore}',
+      ),
+      trailing: Text(status),
+    );
+  }
+
+  String _formatDate(DateTime value) {
+    final local = value.toLocal();
+    String twoDigits(int number) => number.toString().padLeft(2, '0');
+    return '${local.year}-${twoDigits(local.month)}-${twoDigits(local.day)} '
+        '${twoDigits(local.hour)}:${twoDigits(local.minute)}';
   }
 }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +27,11 @@ import 'core/target_manager.dart';
 import 'render/scene_renderer.dart';
 import 'widgets/crosshair.dart';
 import 'widgets/crosshair_editor.dart';
+
+final _aimHistoryProvider =
+    StateNotifierProvider<_AimHistoryNotifier, List<_AimHistoryEntry>>(
+      (ref) => _AimHistoryNotifier(),
+    );
 
 class AimTestPage extends ConsumerStatefulWidget {
   const AimTestPage({super.key});
@@ -81,7 +88,6 @@ class _AimTestPageState extends ConsumerState<AimTestPage>
   bool _submittingScore = false;
   SubmittedScore? _submittedScore;
   String? _submitError;
-  final List<_AimHistoryEntry> _historyEntries = [];
   bool _resultDialogOpen = false;
 
   Cs2Sensitivity get _cs2Sensitivity {
@@ -159,6 +165,7 @@ class _AimTestPageState extends ConsumerState<AimTestPage>
 
   @override
   Widget build(BuildContext context) {
+    final historyEntries = ref.watch(_aimHistoryProvider);
     final colors = Theme.of(context).colorScheme;
     final extension = AppThemeExtension.of(context);
     final simplifiedInput = _isSimplifiedAimContext(context);
@@ -451,7 +458,7 @@ class _AimTestPageState extends ConsumerState<AimTestPage>
           ),
           const SizedBox(height: AppSpacing.x8),
           _AimHistoryPanel(
-            entries: _historyEntries,
+            entries: historyEntries,
             onOpenDetails: _showAimResultDialog,
           ),
         ],
@@ -664,6 +671,9 @@ class _AimTestPageState extends ConsumerState<AimTestPage>
       }
     });
     if (completedEntry != null) {
+      if (ref.read(authProvider).isAuthenticated) {
+        unawaited(_submitAimScore());
+      }
       _showAimResultDialog(completedEntry, allowScoreSubmit: true);
     }
   }
@@ -725,6 +735,9 @@ class _AimTestPageState extends ConsumerState<AimTestPage>
       }
     });
     if (completedEntry != null) {
+      if (ref.read(authProvider).isAuthenticated) {
+        unawaited(_submitAimScore());
+      }
       _showAimResultDialog(completedEntry, allowScoreSubmit: true);
     }
   }
@@ -749,10 +762,7 @@ class _AimTestPageState extends ConsumerState<AimTestPage>
   }
 
   void _storeHistoryEntry(_AimHistoryEntry entry) {
-    _historyEntries.insert(0, entry);
-    if (_historyEntries.length > 50) {
-      _historyEntries.removeRange(50, _historyEntries.length);
-    }
+    ref.read(_aimHistoryProvider.notifier).add(entry);
   }
 
   void _showAimResultDialog(
@@ -932,6 +942,7 @@ class _AimTestPageState extends ConsumerState<AimTestPage>
       setState(() {
         _submittedScore = submitted;
       });
+      ref.invalidate(myScoreHistoryProvider);
     } catch (_) {
       if (!mounted) {
         return;
@@ -981,6 +992,14 @@ final class _AimHistoryEntry {
   final double mYaw;
   final double mPitch;
   final int dpi;
+}
+
+final class _AimHistoryNotifier extends StateNotifier<List<_AimHistoryEntry>> {
+  _AimHistoryNotifier() : super(const []);
+
+  void add(_AimHistoryEntry entry) {
+    state = [entry, ...state].take(50).toList(growable: false);
+  }
 }
 
 class _AimConfigPanel extends StatelessWidget {
@@ -2557,24 +2576,27 @@ class _AimHistoryTile extends StatelessWidget {
       tilePadding: EdgeInsets.zero,
       childrenPadding: const EdgeInsets.only(bottom: AppSpacing.x4),
       leading: CircleAvatar(child: Text('${index + 1}')),
-      title: Text(
-        '${_formatHistoryTime(entry.completedAt)} · ${_formatMs(summary.averageKillTimeMs)}',
-      ),
-      subtitle: Text(
-        '命中 ${summary.hits} · 空枪 ${summary.misses} · 准确率 ${_formatPercent(summary.shotAccuracy)} · 质量分 ${summary.qualityScore}',
-      ),
-      children: [
-        _AimResultDetails(entry: entry),
-        const SizedBox(height: AppSpacing.x3),
-        Align(
-          alignment: Alignment.centerRight,
-          child: OutlinedButton.icon(
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '${_formatHistoryTime(entry.completedAt)} · ${_formatMs(summary.averageKillTimeMs)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.x3),
+          OutlinedButton.icon(
             onPressed: () => onOpenDetails(entry),
             icon: const Icon(Icons.open_in_full_outlined),
             label: const Text('弹窗查看'),
           ),
-        ),
-      ],
+        ],
+      ),
+      subtitle: Text(
+        '命中 ${summary.hits} · 空枪 ${summary.misses} · 准确率 ${_formatPercent(summary.shotAccuracy)} · 质量分 ${summary.qualityScore}',
+      ),
+      children: [_AimResultDetails(entry: entry)],
     );
   }
 }

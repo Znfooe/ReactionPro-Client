@@ -12,6 +12,7 @@ import '../../core/theme/splash_appearance_provider.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
 import '../../shared/widgets/reactionpro_pattern.dart';
 import '../../shared/widgets/status_pill.dart';
+import 'client_update/client_update_settings_card.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -28,7 +29,7 @@ class SettingsPage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('外观设置', style: Theme.of(context).textTheme.headlineMedium),
+          Text('设置', style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: AppSpacing.x4),
           Wrap(
             spacing: AppSpacing.x2,
@@ -39,6 +40,10 @@ class SettingsPage extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.x8),
+          const ClientUpdateSettingsCard(),
+          const SizedBox(height: AppSpacing.x12),
+          Text('外观与开屏', style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: AppSpacing.x6),
           LayoutBuilder(
             builder: (context, constraints) {
               final editor = _AppearanceEditor(

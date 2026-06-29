@@ -280,27 +280,30 @@ class _ReactionHistoryTile extends StatelessWidget {
       tilePadding: EdgeInsets.zero,
       childrenPadding: const EdgeInsets.only(bottom: AppSpacing.x4),
       leading: CircleAvatar(child: Text('${index + 1}')),
-      title: Text(
-        '${_formatHistoryTime(entry.completedAt)} · '
-        '${_formatDecimalMs(entry.averageCalibratedReactionTimeMs)}',
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '${_formatHistoryTime(entry.completedAt)} · '
+              '${_formatDecimalMs(entry.averageCalibratedReactionTimeMs)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.x3),
+          OutlinedButton.icon(
+            onPressed: () => onOpenDetails(entry),
+            icon: const Icon(Icons.open_in_full_outlined),
+            label: const Text('弹窗查看'),
+          ),
+        ],
       ),
       subtitle: Text(
         '${entry.selectedRoundCount} 回合 · '
         '硬件延迟 ${_formatDecimalMs(entry.averageHardwareLatencyEstimateMs)} · '
         '${entry.leaderboardEligible ? '可入榜' : '仅练习'}',
       ),
-      children: [
-        ReactionResultDetails(entry: entry),
-        const SizedBox(height: AppSpacing.x3),
-        Align(
-          alignment: Alignment.centerRight,
-          child: OutlinedButton.icon(
-            onPressed: () => onOpenDetails(entry),
-            icon: const Icon(Icons.open_in_full_outlined),
-            label: const Text('弹窗查看'),
-          ),
-        ),
-      ],
+      children: [ReactionResultDetails(entry: entry)],
     );
   }
 }

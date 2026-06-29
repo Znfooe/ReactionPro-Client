@@ -8,6 +8,7 @@ abstract final class AppDurations {
   static const splashCollapse = Duration(milliseconds: 600);
   static const splashExpand = Duration(milliseconds: 800);
   static const routeCurtain = Duration(milliseconds: 1400);
+  static const authorSignal = Duration(milliseconds: 6400);
 }
 
 abstract final class AppCurves {
