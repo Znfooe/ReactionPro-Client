@@ -33,7 +33,7 @@ class AppPageScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final width = MediaQuery.sizeOf(context).width;
-    final compact = width < AppSpacing.x10 * 28;
+    final compact = width < AppSpacing.x10 * 36;
 
     return Scaffold(
       appBar: AppBar(
