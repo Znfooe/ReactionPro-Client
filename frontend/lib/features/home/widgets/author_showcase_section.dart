@@ -106,21 +106,6 @@ class _AboutAuthorHero extends StatelessWidget {
             color: extension.textSecondary,
           ),
         ),
-        const SizedBox(height: AppSpacing.x6),
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.x4),
-          decoration: BoxDecoration(
-            color: extension.accentMuted,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: extension.borderAccent),
-          ),
-          child: Text(
-            '喜欢把复杂系统做得顺手，也喜欢把页面做得有情绪一点。这里不想只是放一段自我介绍，而是想让你在几秒内记住这个名字。',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: colors.onSurface),
-          ),
-        ),
       ],
     );
 

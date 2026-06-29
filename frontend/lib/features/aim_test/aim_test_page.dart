@@ -27,6 +27,7 @@ import 'core/target_manager.dart';
 import 'render/scene_renderer.dart';
 import 'widgets/crosshair.dart';
 import 'widgets/crosshair_editor.dart';
+import 'widgets/desktop_client_notice.dart';
 
 final _aimHistoryProvider =
     StateNotifierProvider<_AimHistoryNotifier, List<_AimHistoryEntry>>(
@@ -165,6 +166,13 @@ class _AimTestPageState extends ConsumerState<AimTestPage>
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return const AppPageScaffold(
+        activeRoute: AppRoutes.aimTest,
+        child: AimDesktopClientNotice(),
+      );
+    }
+
     final historyEntries = ref.watch(_aimHistoryProvider);
     final colors = Theme.of(context).colorScheme;
     final extension = AppThemeExtension.of(context);

@@ -13,6 +13,7 @@ import '../../features/score/services/score_service.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
 import '../../shared/widgets/status_pill.dart';
 import '../leaderboard/services/leaderboard_service.dart';
+import 'widgets/score_detail_dialog.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -85,6 +86,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               scoreHistory: scoreHistory!,
               publishingScoreIds: _publishingScoreIds,
               onRetryScores: () => ref.invalidate(myScoreHistoryProvider),
+              onViewScore: _showScoreDetail,
               onPublishScore: (score) => _confirmPublishScore(user, score),
               onSave: _saveProfile,
               onLogout: () => ref.read(authProvider.notifier).logout(),
@@ -222,6 +224,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
   }
 
+  void _showScoreDetail(MyScoreItem score) {
+    final detail = ref.read(scoreServiceProvider).fetchScoreDetail(score.id);
+    showDialog<void>(
+      context: context,
+      builder: (context) => ScoreDetailDialog(detail: detail),
+    );
+  }
+
   String _maskEmail(String email) {
     final parts = email.split('@');
     if (parts.length != 2 || parts.first.isEmpty) {
@@ -271,6 +281,7 @@ class _AuthenticatedProfile extends StatelessWidget {
     required this.scoreHistory,
     required this.publishingScoreIds,
     required this.onRetryScores,
+    required this.onViewScore,
     required this.onPublishScore,
     required this.onSave,
     required this.onLogout,
@@ -287,6 +298,7 @@ class _AuthenticatedProfile extends StatelessWidget {
   final AsyncValue<MyScoreHistory> scoreHistory;
   final Set<String> publishingScoreIds;
   final VoidCallback onRetryScores;
+  final ValueChanged<MyScoreItem> onViewScore;
   final ValueChanged<MyScoreItem> onPublishScore;
   final VoidCallback onSave;
   final VoidCallback onLogout;
@@ -409,6 +421,7 @@ class _AuthenticatedProfile extends StatelessWidget {
               history: scoreHistory,
               publishingScoreIds: publishingScoreIds,
               onRetry: onRetryScores,
+              onViewScore: onViewScore,
               onPublishScore: onPublishScore,
             ),
           ],
@@ -445,12 +458,14 @@ class _ProfileScoreHistory extends StatelessWidget {
     required this.history,
     required this.publishingScoreIds,
     required this.onRetry,
+    required this.onViewScore,
     required this.onPublishScore,
   });
 
   final AsyncValue<MyScoreHistory> history;
   final Set<String> publishingScoreIds;
   final VoidCallback onRetry;
+  final ValueChanged<MyScoreItem> onViewScore;
   final ValueChanged<MyScoreItem> onPublishScore;
 
   @override
@@ -480,6 +495,7 @@ class _ProfileScoreHistory extends StatelessWidget {
       data: (scoreHistory) => _ProfileScoreHistoryContent(
         scoreHistory: scoreHistory,
         publishingScoreIds: publishingScoreIds,
+        onViewScore: onViewScore,
         onPublishScore: onPublishScore,
       ),
     );
@@ -490,11 +506,13 @@ class _ProfileScoreHistoryContent extends StatelessWidget {
   const _ProfileScoreHistoryContent({
     required this.scoreHistory,
     required this.publishingScoreIds,
+    required this.onViewScore,
     required this.onPublishScore,
   });
 
   final MyScoreHistory scoreHistory;
   final Set<String> publishingScoreIds;
+  final ValueChanged<MyScoreItem> onViewScore;
   final ValueChanged<MyScoreItem> onPublishScore;
 
   @override
@@ -549,6 +567,7 @@ class _ProfileScoreHistoryContent extends StatelessWidget {
             itemBuilder: (context, index) => _ProfileScoreRow(
               score: recentItems[index],
               publishing: publishingScoreIds.contains(recentItems[index].id),
+              onView: () => onViewScore(recentItems[index]),
               onPublish: () => onPublishScore(recentItems[index]),
             ),
           ),
@@ -564,11 +583,13 @@ class _ProfileScoreRow extends StatelessWidget {
   const _ProfileScoreRow({
     required this.score,
     required this.publishing,
+    required this.onView,
     required this.onPublish,
   });
 
   final MyScoreItem score;
   final bool publishing;
+  final VoidCallback onView;
   final VoidCallback onPublish;
 
   @override
@@ -599,7 +620,19 @@ class _ProfileScoreRow extends StatelessWidget {
       ],
     );
 
-    final action = _buildAction(context);
+    final actions = Wrap(
+      spacing: AppSpacing.x2,
+      runSpacing: AppSpacing.x2,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        OutlinedButton.icon(
+          onPressed: onView,
+          icon: const Icon(Icons.data_object_outlined),
+          label: const Text('查看数据'),
+        ),
+        _buildLeaderboardAction(context),
+      ],
+    );
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < AppSpacing.x10 * 18;
@@ -611,7 +644,7 @@ class _ProfileScoreRow extends StatelessWidget {
               children: [
                 details,
                 const SizedBox(height: AppSpacing.x3),
-                action,
+                actions,
               ],
             ),
           );
@@ -622,7 +655,7 @@ class _ProfileScoreRow extends StatelessWidget {
             children: [
               Expanded(child: details),
               const SizedBox(width: AppSpacing.x4),
-              action,
+              actions,
             ],
           ),
         );
@@ -630,7 +663,7 @@ class _ProfileScoreRow extends StatelessWidget {
     );
   }
 
-  Widget _buildAction(BuildContext context) {
+  Widget _buildLeaderboardAction(BuildContext context) {
     final extension = AppThemeExtension.of(context);
     if (!score.isValid) {
       return Text(

@@ -117,6 +117,20 @@ final class MyScoreHistory {
   }
 }
 
+final class ScoreDetail {
+  ScoreDetail._(Map<String, Object?> data)
+    : data = Map<String, Object?>.unmodifiable(data);
+
+  final Map<String, Object?> data;
+
+  String get id => data['id'] as String;
+  String get testType => data['testType'] as String;
+
+  factory ScoreDetail.fromJson(Map<String, Object?> json) {
+    return ScoreDetail._(json);
+  }
+}
+
 final class SubmittedScore {
   const SubmittedScore({
     required this.id,
@@ -169,6 +183,15 @@ final class ScoreService {
       queryParameters: {'limit': limit},
     );
     return MyScoreHistory.fromJson(_unwrapData(response.data));
+  }
+
+  Future<ScoreDetail> fetchScoreDetail(String scoreId) async {
+    final response = await _dio.get<Map<String, Object?>>('/scores/$scoreId');
+    final score = _unwrapData(response.data)['score'];
+    if (score is Map<String, Object?>) {
+      return ScoreDetail.fromJson(score);
+    }
+    throw const FormatException('Invalid score detail response data.');
   }
 
   Future<SubmittedScore> submitReactionScore({
