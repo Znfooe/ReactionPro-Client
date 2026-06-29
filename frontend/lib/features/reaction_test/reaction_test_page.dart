@@ -41,6 +41,7 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
   SubmittedScore? _submittedScore;
   String? _submitError;
   bool _resultDialogOpen = false;
+  StateSetter? _resultDialogStateSetter;
 
   @override
   void initState() {
@@ -331,6 +332,7 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
           builder: (dialogContext) {
             return StatefulBuilder(
               builder: (context, setDialogState) {
+                _resultDialogStateSetter = setDialogState;
                 final authState = ref.read(authProvider);
                 final availableHeight = MediaQuery.sizeOf(context).height;
                 return AlertDialog(
@@ -383,6 +385,7 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
           },
         );
       } finally {
+        _resultDialogStateSetter = null;
         _resultDialogOpen = false;
       }
     });
@@ -407,7 +410,7 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
       return;
     }
 
-    setState(() {
+    _setScoreSubmissionState(() {
       _submittingScore = true;
       _submitError = null;
     });
@@ -470,7 +473,7 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
       if (!mounted) {
         return;
       }
-      setState(() {
+      _setScoreSubmissionState(() {
         _submittedScore = submitted;
       });
       ref.invalidate(myScoreHistoryProvider);
@@ -478,16 +481,24 @@ class _ReactionTestPageState extends ConsumerState<ReactionTestPage>
       if (!mounted) {
         return;
       }
-      setState(() {
+      _setScoreSubmissionState(() {
         _submitError = '提交失败，请稍后重试';
       });
     } finally {
       if (mounted) {
-        setState(() {
+        _setScoreSubmissionState(() {
           _submittingScore = false;
         });
       }
     }
+  }
+
+  void _setScoreSubmissionState(VoidCallback update) {
+    if (!mounted) {
+      return;
+    }
+    setState(update);
+    _resultDialogStateSetter?.call(() {});
   }
 }
 

@@ -12,6 +12,7 @@ import '../../features/auth/providers/auth_provider.dart';
 import '../../features/score/services/score_service.dart';
 import '../../shared/widgets/app_page_scaffold.dart';
 import '../../shared/widgets/status_pill.dart';
+import '../leaderboard/services/leaderboard_service.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -27,6 +28,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   String? _syncedUserId;
   bool _saving = false;
   bool _deleting = false;
+  final Set<String> _publishingScoreIds = {};
 
   @override
   void dispose() {
@@ -81,7 +83,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               saving: _saving,
               deleting: _deleting,
               scoreHistory: scoreHistory!,
+              publishingScoreIds: _publishingScoreIds,
               onRetryScores: () => ref.invalidate(myScoreHistoryProvider),
+              onPublishScore: (score) => _confirmPublishScore(user, score),
               onSave: _saveProfile,
               onLogout: () => ref.read(authProvider.notifier).logout(),
               onDelete: _confirmDeleteAccount,
@@ -177,6 +181,47 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
   }
 
+  Future<void> _confirmPublishScore(SiteUser user, MyScoreItem score) async {
+    if (!score.leaderboardQualified || score.leaderboardEligible) {
+      return;
+    }
+    final anonymous = await showDialog<bool>(
+      context: context,
+      builder: (context) => _LeaderboardVisibilityDialog(user: user),
+    );
+    if (anonymous == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _publishingScoreIds.add(score.id);
+    });
+    try {
+      await ref
+          .read(scoreServiceProvider)
+          .publishToLeaderboard(scoreId: score.id, anonymous: anonymous);
+      ref.invalidate(myScoreHistoryProvider);
+      ref.invalidate(leaderboardProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(anonymous ? '已匿名提交到排行榜' : '已实名提交到排行榜')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('排行榜提交失败，请稍后重试')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _publishingScoreIds.remove(score.id);
+        });
+      }
+    }
+  }
+
   String _maskEmail(String email) {
     final parts = email.split('@');
     if (parts.length != 2 || parts.first.isEmpty) {
@@ -224,7 +269,9 @@ class _AuthenticatedProfile extends StatelessWidget {
     required this.saving,
     required this.deleting,
     required this.scoreHistory,
+    required this.publishingScoreIds,
     required this.onRetryScores,
+    required this.onPublishScore,
     required this.onSave,
     required this.onLogout,
     required this.onDelete,
@@ -238,7 +285,9 @@ class _AuthenticatedProfile extends StatelessWidget {
   final bool saving;
   final bool deleting;
   final AsyncValue<MyScoreHistory> scoreHistory;
+  final Set<String> publishingScoreIds;
   final VoidCallback onRetryScores;
+  final ValueChanged<MyScoreItem> onPublishScore;
   final VoidCallback onSave;
   final VoidCallback onLogout;
   final VoidCallback onDelete;
@@ -356,7 +405,12 @@ class _AuthenticatedProfile extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.x8),
-            _ProfileScoreHistory(history: scoreHistory, onRetry: onRetryScores),
+            _ProfileScoreHistory(
+              history: scoreHistory,
+              publishingScoreIds: publishingScoreIds,
+              onRetry: onRetryScores,
+              onPublishScore: onPublishScore,
+            ),
           ],
         ),
       ),
@@ -387,10 +441,17 @@ class _AuthenticatedProfile extends StatelessWidget {
 }
 
 class _ProfileScoreHistory extends StatelessWidget {
-  const _ProfileScoreHistory({required this.history, required this.onRetry});
+  const _ProfileScoreHistory({
+    required this.history,
+    required this.publishingScoreIds,
+    required this.onRetry,
+    required this.onPublishScore,
+  });
 
   final AsyncValue<MyScoreHistory> history;
+  final Set<String> publishingScoreIds;
   final VoidCallback onRetry;
+  final ValueChanged<MyScoreItem> onPublishScore;
 
   @override
   Widget build(BuildContext context) {
@@ -416,16 +477,25 @@ class _ProfileScoreHistory extends StatelessWidget {
           ),
         ),
       ),
-      data: (scoreHistory) =>
-          _ProfileScoreHistoryContent(scoreHistory: scoreHistory),
+      data: (scoreHistory) => _ProfileScoreHistoryContent(
+        scoreHistory: scoreHistory,
+        publishingScoreIds: publishingScoreIds,
+        onPublishScore: onPublishScore,
+      ),
     );
   }
 }
 
 class _ProfileScoreHistoryContent extends StatelessWidget {
-  const _ProfileScoreHistoryContent({required this.scoreHistory});
+  const _ProfileScoreHistoryContent({
+    required this.scoreHistory,
+    required this.publishingScoreIds,
+    required this.onPublishScore,
+  });
 
   final MyScoreHistory scoreHistory;
+  final Set<String> publishingScoreIds;
+  final ValueChanged<MyScoreItem> onPublishScore;
 
   @override
   Widget build(BuildContext context) {
@@ -476,8 +546,11 @@ class _ProfileScoreHistoryContent extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: recentItems.length,
             separatorBuilder: (context, index) => const Divider(),
-            itemBuilder: (context, index) =>
-                _ProfileScoreRow(score: recentItems[index]),
+            itemBuilder: (context, index) => _ProfileScoreRow(
+              score: recentItems[index],
+              publishing: publishingScoreIds.contains(recentItems[index].id),
+              onPublish: () => onPublishScore(recentItems[index]),
+            ),
           ),
       ],
     );
@@ -488,32 +561,110 @@ class _ProfileScoreHistoryContent extends StatelessWidget {
 }
 
 class _ProfileScoreRow extends StatelessWidget {
-  const _ProfileScoreRow({required this.score});
+  const _ProfileScoreRow({
+    required this.score,
+    required this.publishing,
+    required this.onPublish,
+  });
 
   final MyScoreItem score;
+  final bool publishing;
+  final VoidCallback onPublish;
 
   @override
   Widget build(BuildContext context) {
     final reaction = score.testType == 'reaction';
     final primaryValue = reaction ? score.calibratedTime : score.avgKillTime;
-    final status = !score.isValid
-        ? '无效成绩'
-        : score.leaderboardEligible
-        ? '已入榜'
-        : '练习成绩';
+    final details = Row(
+      children: [
+        Icon(
+          reaction ? Icons.bolt_outlined : Icons.center_focus_strong_outlined,
+        ),
+        const SizedBox(width: AppSpacing.x3),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${reaction ? '反应力测试' : '击杀时间测试'} · ${primaryValue ?? '--'} ms',
+              ),
+              const SizedBox(height: AppSpacing.x1),
+              Text(
+                '${_formatDate(score.createdAt)} · 质量分 ${score.qualityScore}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
 
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        reaction ? Icons.bolt_outlined : Icons.center_focus_strong_outlined,
-      ),
-      title: Text(
-        '${reaction ? '反应力测试' : '击杀时间测试'} · ${primaryValue ?? '--'} ms',
-      ),
-      subtitle: Text(
-        '${_formatDate(score.createdAt)} · 质量分 ${score.qualityScore}',
-      ),
-      trailing: Text(status),
+    final action = _buildAction(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < AppSpacing.x10 * 18;
+        if (compact) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.x2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                details,
+                const SizedBox(height: AppSpacing.x3),
+                action,
+              ],
+            ),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.x2),
+          child: Row(
+            children: [
+              Expanded(child: details),
+              const SizedBox(width: AppSpacing.x4),
+              action,
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAction(BuildContext context) {
+    final extension = AppThemeExtension.of(context);
+    if (!score.isValid) {
+      return Text(
+        '无效成绩',
+        style: Theme.of(
+          context,
+        ).textTheme.labelMedium?.copyWith(color: extension.colorErrorText),
+      );
+    }
+    if (score.leaderboardEligible) {
+      return StatusPill(
+        label: score.leaderboardAnonymous ? '匿名入榜' : '实名入榜',
+        color: extension.colorSuccess,
+      );
+    }
+    if (!score.leaderboardQualified) {
+      return Tooltip(
+        message: '质量分需达到 90 且没有质量标记',
+        child: OutlinedButton.icon(
+          onPressed: null,
+          icon: const Icon(Icons.lock_outline),
+          label: const Text('质量未达标'),
+        ),
+      );
+    }
+    return OutlinedButton.icon(
+      onPressed: publishing ? null : onPublish,
+      icon: publishing
+          ? const SizedBox.square(
+              dimension: AppSpacing.x4,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.leaderboard_outlined),
+      label: Text(publishing ? '提交中' : '提交到排行榜'),
     );
   }
 
@@ -522,6 +673,115 @@ class _ProfileScoreRow extends StatelessWidget {
     String twoDigits(int number) => number.toString().padLeft(2, '0');
     return '${local.year}-${twoDigits(local.month)}-${twoDigits(local.day)} '
         '${twoDigits(local.hour)}:${twoDigits(local.minute)}';
+  }
+}
+
+class _LeaderboardVisibilityDialog extends StatelessWidget {
+  const _LeaderboardVisibilityDialog({required this.user});
+
+  final SiteUser user;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('提交到排行榜'),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: AppSpacing.x10 * 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '选择这次成绩在排行榜中的展示方式。提交后该成绩会参与对应分类排名。',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: AppSpacing.x4),
+            _LeaderboardVisibilityOption(
+              icon: CircleAvatar(
+                foregroundImage: user.avatarUrl == null
+                    ? null
+                    : NetworkImage(user.avatarUrl!),
+                child: user.avatarUrl == null
+                    ? const Icon(Icons.person_outline)
+                    : null,
+              ),
+              title: user.displayName,
+              description: '显示当前头像和名称',
+              onTap: () => Navigator.of(context).pop(false),
+            ),
+            const SizedBox(height: AppSpacing.x3),
+            _LeaderboardVisibilityOption(
+              icon: const CircleAvatar(
+                child: Icon(Icons.visibility_off_outlined),
+              ),
+              title: '匿名玩家',
+              description: '隐藏头像、名称和用户标识',
+              onTap: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+      ],
+    );
+  }
+}
+
+class _LeaderboardVisibilityOption extends StatelessWidget {
+  const _LeaderboardVisibilityOption({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  final Widget icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final extension = AppThemeExtension.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: extension.borderMuted),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.x4),
+          child: Row(
+            children: [
+              icon,
+              const SizedBox(width: AppSpacing.x3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: AppSpacing.x1),
+                    Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: extension.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_outlined),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

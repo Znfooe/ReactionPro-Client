@@ -34,16 +34,14 @@ class ScoreSubmitPanel extends StatelessWidget {
     final submittedScore = this.submittedScore;
     final statusColor = submittedScore == null
         ? extension.textSecondary
-        : submittedScore.leaderboardEligible
-        ? extension.colorSuccessText
-        : extension.colorWarningText;
+        : extension.colorSuccessText;
     final statusText = submittedScore == null
         ? authenticated
               ? '成绩尚未提交'
               : '登录后提交成绩'
         : submittedScore.leaderboardEligible
-        ? '已入榜'
-        : '已保存练习成绩';
+        ? '提交完成 · 已入榜'
+        : '提交完成';
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -85,6 +83,8 @@ class ScoreSubmitPanel extends StatelessWidget {
                   label: Text(
                     submitting
                         ? '提交中'
+                        : submittedScore != null
+                        ? '已提交'
                         : authenticated
                         ? '提交成绩'
                         : '去登录',

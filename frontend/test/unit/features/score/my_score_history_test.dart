@@ -24,6 +24,8 @@ void main() {
           'bestTime': 280,
           'isValid': true,
           'leaderboardEligible': false,
+          'leaderboardQualified': true,
+          'leaderboardAnonymous': false,
           'qualityScore': 88,
           'createdAt': '2026-06-29T01:00:00.000Z',
         },
@@ -34,5 +36,7 @@ void main() {
     expect(history.summary.averageReactionTime, 218);
     expect(history.items.single.testType, 'aim');
     expect(history.items.single.avgKillTime, 310);
+    expect(history.items.single.leaderboardQualified, isTrue);
+    expect(history.items.single.leaderboardAnonymous, isFalse);
   });
 }

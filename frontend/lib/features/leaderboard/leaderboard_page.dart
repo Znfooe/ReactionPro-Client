@@ -152,6 +152,8 @@ class _LeaderboardRows extends StatelessWidget {
           _LeaderboardRow(
             rank: '${row.rank}',
             user: row.displayName,
+            avatarUrl: row.avatarUrl,
+            anonymous: row.anonymous,
             score: '${row.scoreValue} ms',
             subtitle: category.shortLabel,
           ),
@@ -224,6 +226,8 @@ class _LeaderboardRow extends StatelessWidget {
     required this.rank,
     required this.user,
     required this.score,
+    this.avatarUrl,
+    this.anonymous = false,
     this.subtitle,
     this.header = false,
   });
@@ -231,6 +235,8 @@ class _LeaderboardRow extends StatelessWidget {
   final String rank;
   final String user;
   final String score;
+  final String? avatarUrl;
+  final bool anonymous;
   final String? subtitle;
   final bool header;
 
@@ -263,6 +269,23 @@ class _LeaderboardRow extends StatelessWidget {
               ),
             ),
           ),
+          if (!header) ...[
+            CircleAvatar(
+              radius: AppSpacing.x4,
+              foregroundImage: avatarUrl == null
+                  ? null
+                  : NetworkImage(avatarUrl!),
+              child: avatarUrl == null
+                  ? Icon(
+                      anonymous
+                          ? Icons.visibility_off_outlined
+                          : Icons.person_outline,
+                      size: AppSpacing.x4,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: AppSpacing.x3),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

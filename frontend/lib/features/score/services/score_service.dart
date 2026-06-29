@@ -56,6 +56,8 @@ final class MyScoreItem {
     required this.bestTime,
     required this.isValid,
     required this.leaderboardEligible,
+    required this.leaderboardQualified,
+    required this.leaderboardAnonymous,
     required this.qualityScore,
     required this.createdAt,
   });
@@ -69,6 +71,8 @@ final class MyScoreItem {
   final int? bestTime;
   final bool isValid;
   final bool leaderboardEligible;
+  final bool leaderboardQualified;
+  final bool leaderboardAnonymous;
   final int qualityScore;
   final DateTime createdAt;
 
@@ -83,6 +87,8 @@ final class MyScoreItem {
       bestTime: json['bestTime'] as int?,
       isValid: json['isValid'] as bool,
       leaderboardEligible: json['leaderboardEligible'] as bool,
+      leaderboardQualified: json['leaderboardQualified'] as bool? ?? false,
+      leaderboardAnonymous: json['leaderboardAnonymous'] as bool? ?? false,
       qualityScore: json['qualityScore'] as int,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
@@ -118,6 +124,7 @@ final class SubmittedScore {
     required this.category,
     required this.isValid,
     required this.leaderboardEligible,
+    required this.leaderboardAnonymous,
     required this.qualityScore,
     required this.qualityFlags,
     required this.createdAt,
@@ -128,6 +135,7 @@ final class SubmittedScore {
   final String category;
   final bool isValid;
   final bool leaderboardEligible;
+  final bool leaderboardAnonymous;
   final int qualityScore;
   final List<String> qualityFlags;
   final DateTime createdAt;
@@ -139,6 +147,7 @@ final class SubmittedScore {
       category: json['category'] as String,
       isValid: json['isValid'] as bool,
       leaderboardEligible: json['leaderboardEligible'] as bool,
+      leaderboardAnonymous: json['leaderboardAnonymous'] as bool? ?? false,
       qualityScore: json['qualityScore'] as int,
       qualityFlags: [
         for (final flag in (json['qualityFlags'] as List<Object?>? ?? const []))
@@ -282,6 +291,22 @@ final class ScoreService {
       payload['perRoundData'] = perRoundData;
     }
     return _submit(payload);
+  }
+
+  Future<SubmittedScore> publishToLeaderboard({
+    required String scoreId,
+    required bool anonymous,
+  }) async {
+    final response = await _dio.post<Map<String, Object?>>(
+      '/scores/$scoreId/leaderboard',
+      data: {'anonymous': anonymous},
+    );
+    final data = _unwrapData(response.data);
+    final score = data['score'];
+    if (score is Map<String, Object?>) {
+      return SubmittedScore.fromJson(score);
+    }
+    throw const FormatException('Invalid score response data.');
   }
 
   Future<SubmittedScore> _submit(Map<String, Object?> payload) async {

@@ -59,6 +59,7 @@ final class LeaderboardEntry {
     required this.userId,
     required this.displayName,
     required this.avatarUrl,
+    required this.anonymous,
     required this.testType,
     required this.scoreValue,
     required this.createdAt,
@@ -66,9 +67,10 @@ final class LeaderboardEntry {
 
   final int rank;
   final String scoreId;
-  final String userId;
+  final String? userId;
   final String displayName;
   final String? avatarUrl;
+  final bool anonymous;
   final String testType;
   final int scoreValue;
   final DateTime createdAt;
@@ -77,9 +79,10 @@ final class LeaderboardEntry {
     return LeaderboardEntry(
       rank: json['rank'] as int,
       scoreId: json['scoreId'] as String,
-      userId: json['userId'] as String,
+      userId: json['userId'] as String?,
       displayName: json['displayName'] as String,
       avatarUrl: json['avatarUrl'] as String?,
+      anonymous: json['anonymous'] as bool? ?? false,
       testType: json['testType'] as String,
       scoreValue: json['scoreValue'] as int,
       createdAt: DateTime.parse(json['createdAt'] as String),
