@@ -457,12 +457,10 @@ class _SupportSection extends StatelessWidget {
                 children: const [
                   Expanded(
                     child: _QrShowcaseCard(
-                      title: '微信收款码',
-                      subtitle: '扫一扫就能请我喝杯咖啡，感谢你愿意支持这个小站继续生长。',
-                      accentColor: SimpleIconColors.wechat,
-                      icon: SimpleIcons.wechat,
+                      title: '请杯咖啡',
+                      subtitle: '小小的咖啡，万分的感谢',
+                      icon: Icons.local_cafe_outlined,
                       imagePath: 'assets/images/author/payment-code.jpg',
-                      footer: '你的一点支持，会被认真收下。',
                     ),
                   ),
                   SizedBox(width: AppSpacing.x4),
@@ -481,12 +479,10 @@ class _SupportSection extends StatelessWidget {
             : const Column(
                 children: [
                   _QrShowcaseCard(
-                    title: '微信收款码',
-                    subtitle: '扫一扫就能请我喝杯咖啡，感谢你愿意支持这个小站继续生长。',
-                    accentColor: SimpleIconColors.wechat,
-                    icon: SimpleIcons.wechat,
+                    title: '请杯咖啡',
+                    subtitle: '小小的咖啡，万分的感谢',
+                    icon: Icons.local_cafe_outlined,
                     imagePath: 'assets/images/author/payment-code.jpg',
-                    footer: '你的一点支持，会被认真收下。',
                   ),
                   SizedBox(height: AppSpacing.x4),
                   _QrShowcaseCard(
@@ -571,22 +567,24 @@ class _QrShowcaseCard extends StatelessWidget {
   const _QrShowcaseCard({
     required this.title,
     required this.subtitle,
-    required this.accentColor,
     required this.icon,
     required this.imagePath,
-    required this.footer,
+    this.accentColor,
+    this.footer,
   });
 
   final String title;
   final String subtitle;
-  final Color accentColor;
+  final Color? accentColor;
   final IconData icon;
   final String imagePath;
-  final String footer;
+  final String? footer;
 
   @override
   Widget build(BuildContext context) {
     final extension = AppThemeExtension.of(context);
+    final resolvedAccentColor =
+        accentColor ?? Theme.of(context).colorScheme.primary;
 
     return _SectionCard(
       child: Column(
@@ -594,7 +592,7 @@ class _QrShowcaseCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: accentColor),
+              Icon(icon, color: resolvedAccentColor),
               const SizedBox(width: AppSpacing.x2),
               Text(title, style: Theme.of(context).textTheme.titleMedium),
             ],
@@ -625,8 +623,10 @@ class _QrShowcaseCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.x4),
-          Text(footer, style: Theme.of(context).textTheme.bodyMedium),
+          if (footer case final footer?) ...[
+            const SizedBox(height: AppSpacing.x4),
+            Text(footer, style: Theme.of(context).textTheme.bodyMedium),
+          ],
         ],
       ),
     );
