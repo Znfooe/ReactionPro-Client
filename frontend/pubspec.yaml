@@ -38,7 +38,7 @@ flutter:
   assets:
     - assets/images/home/anime-girl.png
     - assets/images/author/payment-code.jpg
-    - assets/images/author/qq-friend-code.jpg
+    - assets/images/author/qq-friend-code-v2.jpg
   fonts:
     - family: CangErYuMoW01
       fonts:
