@@ -42,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen>
   static const _expandDuration = AppDurations.splashExpand;
   static const _charDelayStep = Duration(milliseconds: 80);
   static const _charDuration = Duration(milliseconds: 400);
-  static const _lineHeight = AppTypography.line5xl;
+  static const _lineHeight = AppTypography.splashRevealLineHeight;
   static const _lineThickness = 2.0;
   static const _spaceWidth = AppTypography.text5xl * 0.4;
 

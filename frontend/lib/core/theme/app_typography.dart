@@ -37,6 +37,7 @@ abstract final class AppTypography {
 
   static const splashOutlineWidth = 5.0;
   static const splashLetterSpacing = 4.0;
+  static const splashRevealLineHeight = 72.0;
 
   static TextStyle mono({
     required double fontSize,
