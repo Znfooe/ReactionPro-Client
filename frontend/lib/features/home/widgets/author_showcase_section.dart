@@ -447,7 +447,7 @@ class _SupportSection extends StatelessWidget {
         Text('请杯咖啡', style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: AppSpacing.x2),
         Text(
-          '扫一扫即可联系或请杯咖啡。二维码保持紧凑，不抢走页面的呼吸感。',
+          '谢主隆恩，祝主富贵',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: AppSpacing.x6),
