@@ -280,6 +280,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     return Stack(
       alignment: Alignment.center,
+      clipBehavior: Clip.none,
       children: [
         _buildSlotRevealRow(chars, t, strokeStyle),
         ShaderMask(

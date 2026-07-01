@@ -19,18 +19,19 @@ class SlotRevealChar extends StatelessWidget {
     final clampedProgress = progress.clamp(0.0, 1.0);
 
     return RepaintBoundary(
-      child: ClipRect(
-        child: SizedBox(
-          height: lineHeight,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final dy = constraints.maxHeight * (1.0 - clampedProgress);
-              return Transform.translate(
+      child: SizedBox(
+        height: lineHeight,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final dy = constraints.maxHeight * (1.0 - clampedProgress);
+            return Opacity(
+              opacity: clampedProgress,
+              child: Transform.translate(
                 offset: Offset(0, dy),
                 child: Text(char, style: style),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
