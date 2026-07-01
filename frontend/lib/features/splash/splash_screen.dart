@@ -193,14 +193,6 @@ class _SplashScreenState extends State<SplashScreen>
                       child: _buildStaticSplashText(),
                     ),
                   ),
-                  Opacity(
-                    opacity: progress,
-                    child: Container(
-                      width: double.infinity,
-                      height: _lineThickness,
-                    color: widget.appearance.line,
-                    ),
-                  ),
                 ],
               ),
             ),
