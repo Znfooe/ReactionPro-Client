@@ -35,7 +35,8 @@ abstract final class AppTypography {
   static const fontWeightSemibold = FontWeight.w600;
   static const fontWeightBold = FontWeight.w700;
 
-  static const splashOutlineWidth = 3.0;
+  static const splashOutlineWidth = 5.0;
+  static const splashLetterSpacing = 4.0;
 
   static TextStyle mono({
     required double fontSize,

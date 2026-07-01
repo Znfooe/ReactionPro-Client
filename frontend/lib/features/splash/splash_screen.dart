@@ -343,7 +343,7 @@ class _SplashScreenState extends State<SplashScreen>
       fontSize: AppTypography.text5xl,
       fontWeight: AppTypography.fontWeightBold,
       height: AppTypography.line5xl / AppTypography.text5xl,
-      letterSpacing: 0,
+      letterSpacing: AppTypography.splashLetterSpacing,
     );
   }
 

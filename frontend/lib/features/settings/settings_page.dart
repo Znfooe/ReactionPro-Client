@@ -387,7 +387,7 @@ class _PreviewBrandMark extends StatelessWidget {
       fontFamilyFallback: AppTypography.fontFallback,
       fontSize: AppTypography.text4xl,
       fontWeight: AppTypography.fontWeightBold,
-      letterSpacing: 0,
+      letterSpacing: AppTypography.splashLetterSpacing,
     );
 
     return Stack(
